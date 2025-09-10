@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ignite-workload
+  namespace: ignite
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ignite-workload
+  template:
+    metadata:
+      labels:
+        app: ignite-workload
+    spec:
+      containers:
+        - name: runner
+          image: apacheignite/ignite:3.0.0
+          command: ["/bin/sh","-c"]
+          args:
+            - |
+              set -e
+              echo "Starting continuous SQL workload..."
+              /opt/ignite3/bin/ignite3 <<'EOF'
+              connect http://ignite-client.ignite:10300
+              sql
+              CREATE TABLE IF NOT EXISTS Person (
+                id INT PRIMARY KEY,
+                city VARCHAR,
+                name VARCHAR,
+                age INT,
+                company VARCHAR
+              );
+              exit
+              EOF
+              while true; do
+                /opt/ignite3/bin/ignite3 <<'EOF'
+                connect http://ignite-client.ignite:10300
+                sql
+                INSERT INTO Person (id, city, name, age, company)
+                VALUES (CAST(FLOOR(RAND()*100000) AS INT),
+                        'London', 'John Doe', CAST(FLOOR(RAND()*80) AS INT), 'Apache');
+                SELECT COUNT(*) AS cnt FROM Person;
+                exit
+                EOF
+                sleep 1
+              done

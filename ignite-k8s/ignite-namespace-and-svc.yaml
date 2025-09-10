@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ignite
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ignite
+  namespace: ignite
+  labels:
+    app: ignite
+spec:
+  clusterIP: None
+  selector:
+    app: ignite
+  ports:
+    - name: internal
+      port: 3344
+      targetPort: 3344
+    - name: rest
+      port: 10300
+      targetPort: 10300
+    - name: thin
+      port: 10800
+      targetPort: 10800
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ignite-client
+  namespace: ignite
+  labels:
+    app: ignite
+spec:
+  type: ClusterIP
+  selector:
+    app: ignite
+  ports:
+    - name: rest
+      port: 10300
+      targetPort: 10300
+    - name: thin
+      port: 10800
+      targetPort: 10800

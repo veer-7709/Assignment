@@ -1,0 +1,30 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ignite-init
+  namespace: ignite
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: ignite-cli
+          image: apacheignite/ignite:3.0.0
+          command: ["/bin/sh","-c"]
+          args:
+            - |
+              set -e
+              echo "Waiting for Ignite REST to be ready..."
+              for i in $(seq 1 60); do
+                if curl -sS --fail http://ignite-client.ignite:10300/; then
+                  break
+                fi
+                sleep 2
+              done
+              echo "Initializing cluster..."
+              /opt/ignite3/bin/ignite3 <<'EOF'
+              connect http://ignite-client.ignite:10300
+              cluster init --name=demo --metastorage-group=ignite-0,ignite-1,ignite-2
+              exit
+              EOF
